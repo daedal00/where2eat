@@ -5,7 +5,6 @@ import restaurantRoutes from "./routes/restaurants.js";
 import sessionRoutes from "./routes/sessions.js";
 
 const app = express();
-const port = process.env.PORT || 5050;
 
 app.use(
   cors({
@@ -18,7 +17,13 @@ app.use(express.json());
 app.use("/api/restaurants", restaurantRoutes);
 app.use("/api/sessions", sessionRoutes);
 
-// start the Express server
-app.listen(port, () => {
-  console.log(`Server is running on port: ${port}`);
-});
+// Only listen to port if not running on Vercel
+if (process.env.NODE_ENV !== "production") {
+  const port = process.env.PORT || 5050;
+  app.listen(port, () => {
+    console.log(`Server is running on port: ${port}`);
+  });
+}
+
+// Export the app for Vercel
+export default app;
