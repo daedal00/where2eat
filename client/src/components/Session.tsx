@@ -91,7 +91,7 @@ const Session = () => {
     }
   };
 
-  const handleVote = async (restaurantId: string, newVote: number) => {
+  const handleVote = async (restaurantId: string) => {
     try {
       const currentVote =
         votes.find((v) => v.restaurant === restaurantId)?.vote || 0;
@@ -240,7 +240,7 @@ const Session = () => {
                       </div>
                       <div className="flex space-x-2">
                         <button
-                          onClick={() => handleVote(restaurant._id, 1)}
+                          onClick={() => handleVote(restaurant._id)}
                           className={`p-2 rounded-full transition-colors ${
                             vote === 1
                               ? "bg-green-500 text-white"
