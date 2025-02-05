@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { api } from "../services/api";
 
 interface Restaurant {
   name: string;
@@ -47,21 +48,7 @@ const RestaurantUpload = () => {
           )}`
         );
 
-        const response = await fetch(
-          "http://localhost:5050/api/restaurants/bulk",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(chunk),
-          }
-        );
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || "Failed to upload restaurants");
-        }
+        await api.uploadRestaurants(chunk);
       }
 
       setSuccess(true);

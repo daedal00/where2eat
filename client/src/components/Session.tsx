@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
+import { api } from "../services/api";
 
 interface Restaurant {
   _id: string;
@@ -46,14 +47,10 @@ const Session = () => {
   useEffect(() => {
     const pollSession = async () => {
       try {
-        const response = await fetch(
-          `http://localhost:5050/api/sessions/${code}`
-        );
-        if (!response.ok) throw new Error("Session not found");
-        const data = await response.json();
+        const data = await api.getSession(code!);
         setSession(data);
+        setIsCreator(data.creatorName === name);
 
-        // Check if this name is already in the session and initialize votes
         const participant = data.participants.find((p) => p.name === name);
         if (participant) {
           setVotes(participant.votes);
@@ -84,36 +81,21 @@ const Session = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const handleJoin = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleJoin = async (name: string) => {
     try {
-      const response = await fetch(
-        `http://localhost:5050/api/sessions/${code}/join`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            name,
-            isCreator: !session?.creatorName || session?.creatorName === "",
-          }),
-        }
-      );
-
-      if (!response.ok) throw new Error("Failed to join session");
-      const data = await response.json();
-      setIsCreator(data.creatorName === name);
-      setJoining(false);
+      const data = await api.joinSession(code!, name);
+      setSession(data);
+      setName(name);
     } catch (err) {
-      setError("Failed to join session");
+      setError(err instanceof Error ? err.message : "Failed to join session");
     }
   };
 
   const handleVote = async (restaurantId: string, newVote: number) => {
     try {
-      // Update local state first for immediate feedback
       const currentVote =
         votes.find((v) => v.restaurant === restaurantId)?.vote || 0;
-      const finalVote = currentVote === 1 ? 0 : 1; // Toggle between 0 and 1 only
+      const finalVote = currentVote === 1 ? 0 : 1;
 
       const newVotes =
         votes.length > 0
@@ -126,18 +108,8 @@ const Session = () => {
             }));
 
       setVotes(newVotes);
-
-      // Send to server
-      const response = await fetch(
-        `http://localhost:5050/api/sessions/${code}/vote`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name, votes: newVotes }),
-        }
-      );
-
-      if (!response.ok) throw new Error("Failed to submit vote");
+      const response = await api.submitVotes(code!, name, newVotes);
+      setSession(response);
     } catch (err) {
       setError("Failed to submit vote");
     }
@@ -145,17 +117,7 @@ const Session = () => {
 
   const handleConfirm = async () => {
     try {
-      const response = await fetch(
-        `http://localhost:5050/api/sessions/${code}/confirm`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name }),
-        }
-      );
-
-      if (!response.ok) throw new Error("Failed to confirm votes");
-      const data = await response.json();
+      const data = await api.confirmVotes(code!, name);
       setSession(data);
     } catch (err) {
       setError("Failed to confirm votes");
@@ -164,18 +126,8 @@ const Session = () => {
 
   const handleKickParticipant = async (participantName: string) => {
     try {
-      const response = await fetch(
-        `http://localhost:5050/api/sessions/${code}/kick`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ creatorName: name, participantName }),
-        }
-      );
-
-      if (!response.ok) throw new Error("Failed to kick participant");
-      const data = await response.json();
-      setSession(data);
+      const response = await api.kickParticipant(code!, name, participantName);
+      setSession(response);
     } catch (err) {
       setError("Failed to kick participant");
     }
@@ -183,17 +135,8 @@ const Session = () => {
 
   const handleRevote = async () => {
     try {
-      const response = await fetch(
-        `http://localhost:5050/api/sessions/${code}/revote`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ creatorName: name }),
-        }
-      );
-
-      if (!response.ok) throw new Error("Failed to restart voting");
-      const data = await response.json();
+      if (!session) return;
+      const data = await api.restartVoting(code!, session.creatorName);
       setSession(data);
     } catch (err) {
       setError("Failed to restart voting");
@@ -228,7 +171,13 @@ const Session = () => {
           <h2 className="text-2xl font-bold mb-6 text-center text-gray-800 dark:text-white">
             Join Session
           </h2>
-          <form onSubmit={handleJoin} className="space-y-4">
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleJoin(name);
+            }}
+            className="space-y-4"
+          >
             <div>
               <label className="block text-gray-700 dark:text-gray-200 text-sm font-bold mb-2">
                 Your Name

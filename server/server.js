@@ -7,7 +7,16 @@ import sessionRoutes from "./routes/sessions.js";
 const app = express();
 const port = process.env.PORT || 5050;
 
-app.use(cors());
+app.use(
+  cors({
+    origin: [
+      process.env.NODE_ENV === "production"
+        ? "https://where2eat-client.vercel.app" // Update this to your actual Vercel frontend domain
+        : "http://localhost:5173",
+    ],
+    credentials: true,
+  })
+);
 app.use(express.json());
 
 app.use("/api/restaurants", restaurantRoutes);

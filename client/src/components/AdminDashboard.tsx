@@ -21,7 +21,9 @@ const AdminDashboard = () => {
 
   const fetchRestaurants = async () => {
     try {
-      const response = await fetch("http://localhost:5050/api/restaurants");
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/restaurants`
+      );
       if (!response.ok) throw new Error("Failed to fetch restaurants");
       const data = await response.json();
       setRestaurants(data);
@@ -36,7 +38,7 @@ const AdminDashboard = () => {
     if (editingId === id) {
       try {
         const response = await fetch(
-          `http://localhost:5050/api/restaurants/${id}`,
+          `${import.meta.env.VITE_API_URL}/api/restaurants/${id}`,
           {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
@@ -63,7 +65,7 @@ const AdminDashboard = () => {
 
     try {
       const response = await fetch(
-        `http://localhost:5050/api/restaurants/${id}`,
+        `${import.meta.env.VITE_API_URL}/api/restaurants/${id}`,
         {
           method: "DELETE",
         }

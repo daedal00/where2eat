@@ -1,11 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-
-interface CreateSessionFilters {
-  locations: string[];
-  includeCuisines: string[];
-  excludeCuisines: string[];
-}
+import { api } from "../services/api";
 
 const CreateSession = () => {
   const navigate = useNavigate();
@@ -22,17 +17,10 @@ const CreateSession = () => {
   useEffect(() => {
     const fetchInitialData = async () => {
       try {
-        const [citiesResponse, cuisinesResponse] = await Promise.all([
-          fetch("http://localhost:5050/api/restaurants/cities"),
-          fetch("http://localhost:5050/api/restaurants/cuisines"),
+        const [citiesData, cuisinesData] = await Promise.all([
+          api.getCities(),
+          api.getCuisines(),
         ]);
-
-        if (!citiesResponse.ok || !cuisinesResponse.ok) {
-          throw new Error("Failed to fetch initial data");
-        }
-
-        const citiesData = await citiesResponse.json();
-        const cuisinesData = await cuisinesResponse.json();
 
         setCities(citiesData);
         setAllCuisines(cuisinesData);
@@ -56,30 +44,10 @@ const CreateSession = () => {
       }
 
       try {
-        console.log("Fetching cuisines for locations:", selectedLocations);
-        const response = await fetch(
-          `http://localhost:5050/api/restaurants/cuisines-by-location?locations=${selectedLocations.join(
-            ","
-          )}`
-        );
-
-        if (!response.ok) throw new Error("Failed to fetch cuisines");
-
-        const data = await response.json();
-        console.log("Received cuisine data:", data);
+        const data = await api.getCuisinesByLocation(selectedLocations);
         setAvailableCuisines(data.cuisines);
-
-        setCuisinePreferences((prev) => {
-          const newPreferences = new Map(prev);
-          for (const [cuisine] of prev) {
-            if (!data.cuisines.includes(cuisine)) {
-              newPreferences.delete(cuisine);
-            }
-          }
-          return newPreferences;
-        });
       } catch (err) {
-        console.error("Error fetching available cuisines:", err);
+        console.error("Error fetching cuisines:", err);
       }
     };
 
@@ -130,31 +98,16 @@ const CreateSession = () => {
         .filter(([_, pref]) => pref === "exclude")
         .map(([cuisine]) => cuisine);
 
-      const filters: CreateSessionFilters = {
+      const filters = {
         locations: selectedLocations,
         includeCuisines,
         excludeCuisines,
       };
 
-      const response = await fetch("http://localhost:5050/api/sessions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ filters }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to create session");
-      }
-
-      const data = await response.json();
+      const data = await api.createSession(filters);
       navigate(`/session/${data.code}`);
     } catch (err) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError("Failed to create session. Please try again.");
-      }
+      setError(err instanceof Error ? err.message : "Failed to create session");
     }
   };
 
