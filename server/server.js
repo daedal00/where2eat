@@ -9,11 +9,7 @@ const port = process.env.PORT || 5050;
 
 app.use(
   cors({
-    origin: [
-      process.env.NODE_ENV === "production"
-        ? "https://where2eat-client.vercel.app" // Update this to your actual Vercel frontend domain
-        : "http://localhost:5173",
-    ],
+    origin: ["https://where2eat.vercel.app", "http://localhost:5173"],
     credentials: true,
   })
 );
